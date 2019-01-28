@@ -1,11 +1,7 @@
-﻿using Prism.Commands;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ThreadTest
@@ -27,23 +23,33 @@ namespace ThreadTest
         {
             model = new Model();
 
-            Submit = new AsyncCommand(ExecuteSubmitAsync);
-        }
+            Submit = new AsyncCommand(async () =>
+            {
+                MyBackground = new SolidColorBrush(Colors.LightGray);
 
-        private async Task ExecuteSubmitAsync()
-        {
-            MyBackground = new SolidColorBrush(Colors.LightGray);
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("MyBackground"));
 
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("MyBackground"));
+                Console.WriteLine("before async thread id: " + Thread.CurrentThread.ManagedThreadId);
 
-            var res = await Task<int>.Run(() => { return model.DoWork(); });
+                var task = new Task<int>(() =>
+                {
+                    Console.WriteLine("inside async thread id: " + Thread.CurrentThread.ManagedThreadId);
+                    return model.DoWork();
+                });
 
-            MyProp = res;
+                task.Start();
 
-            MyBackground = new SolidColorBrush(Colors.Transparent);
+                var res = await task;
 
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("MyProp"));
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("MyBackground"));
+                Console.WriteLine("after async thread id: " + Thread.CurrentThread.ManagedThreadId);
+
+                MyProp = model.WorkResult;
+
+                MyBackground = new SolidColorBrush(Colors.Transparent);
+
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("MyProp"));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("MyBackground"));
+            });
         }
     }
 }

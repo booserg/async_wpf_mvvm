@@ -9,6 +9,8 @@ namespace ThreadTest
 {
     public class Model
     {
+        public int WorkResult { get; set; }
+
         public int DoWork()
         {
             var result = 0;
@@ -18,6 +20,8 @@ namespace ThreadTest
                 Thread.Sleep(1000);
                 result = i;
             }
+
+            WorkResult = result;
 
             return result;
         }
